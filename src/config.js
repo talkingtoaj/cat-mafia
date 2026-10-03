@@ -14,8 +14,6 @@ export const PALETTE = {
   night: 0x1a1423,
   skyTop: 0x3b2d5c,
   skyBottom: 0xe0896b,
-  skyline: 0x5a3d6e,
-  skylineFar: 0x8a5a7a,
   cream: 0xf2e3c6,
   road: 0x4a3f45,
   heart: 0xd94a5a,

@@ -12,7 +12,6 @@ import {
 import { SHOPS } from '../data/shops.js';
 const MARGIN = 48;
 const GAP = 14;
-const SHOP_TOP = SIDEWALK_Y - 170; // shop art is 170px tall
 const WALK_SPEED = 48; // game pixels per second
 const NEAR_SHOP = 34; // how close the Don must be to a shop door to "check in"
 
@@ -23,7 +22,9 @@ export default class StreetScene extends Phaser.Scene {
 
   create() {
     this.drawSky();
-    this.add.image(0, SHOP_TOP + 60, 'skyline').setOrigin(0, 1).setScrollFactor(0.3);
+    // Far houses drift slower than the shops, so the street feels deep.
+    this.backdrop = this.add.tileSprite(0, SIDEWALK_Y, GAME_WIDTH, 224, 'backdrop')
+      .setOrigin(0, 1).setScrollFactor(0.6);
 
     // Shops side by side, with a street lamp in each gap
     let x = MARGIN;
@@ -37,10 +38,11 @@ export default class StreetScene extends Phaser.Scene {
     const worldW = x - GAP + MARGIN;
     this.worldW = worldW;
 
-    // Sidewalk, curb, road
+    this.backdrop.width = worldW;
+
+    // Sidewalk (gutter, cobbles and curb are all in the tile), then the road
     this.add.tileSprite(0, SIDEWALK_Y, worldW, ROAD_Y - SIDEWALK_Y, 'sidewalk').setOrigin(0, 0);
-    this.add.rectangle(0, ROAD_Y, worldW, 3, PALETTE.cream).setOrigin(0, 0);
-    this.add.rectangle(0, ROAD_Y + 3, worldW, PANEL_Y - ROAD_Y - 3, PALETTE.road).setOrigin(0, 0);
+    this.add.rectangle(0, ROAD_Y, worldW, PANEL_Y - ROAD_Y, PALETTE.road).setOrigin(0, 0);
 
     this.don = this.add.sprite(MARGIN / 2 + 10, FEET_Y, 'don', 0).setOrigin(0.5, 56 / 64);
     this.targetX = null;
