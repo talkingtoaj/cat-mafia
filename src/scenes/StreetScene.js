@@ -1,19 +1,14 @@
 import Phaser from 'phaser';
-import {
-  GAME_WIDTH,
-  GAME_HEIGHT,
-  SIDEWALK_Y,
-  FEET_Y,
-  ROAD_Y,
-  PANEL_Y,
-  FONT,
-  PALETTE,
-} from '../config.js';
+import { GAME_HEIGHT, SIDEWALK_Y, FEET_Y, PANEL_Y, FONT, PALETTE } from '../config.js';
 import { SHOPS } from '../data/shops.js';
+import { state, addHearts } from '../state.js';
+import { drawBackground, drawGround, addShop, makePanel } from './scenery.js';
+
 const MARGIN = 48;
 const GAP = 14;
 const WALK_SPEED = 48; // game pixels per second
 const NEAR_SHOP = 34; // how close the Don must be to a shop door to "check in"
+const TROUBLE_EVERY = 45000; // ms between a random shop losing a heart
 
 export default class StreetScene extends Phaser.Scene {
   constructor() {
@@ -21,10 +16,10 @@ export default class StreetScene extends Phaser.Scene {
   }
 
   create() {
-    this.drawSky();
-    // Far houses drift slower than the shops, so the street feels deep.
-    this.backdrop = this.add.tileSprite(0, SIDEWALK_Y, GAME_WIDTH, 224, 'backdrop')
-      .setOrigin(0, 1).setScrollFactor(0.6);
+    const shopWidths = SHOPS.map((s) => this.textures.get(`shop-${s.key}`).getSourceImage().width);
+    const worldW = MARGIN * 2 + shopWidths.reduce((a, b) => a + b, 0) + GAP * (SHOPS.length - 1);
+    this.worldW = worldW;
+    drawBackground(this, worldW);
 
     // Shops side by side, with a street lamp in each gap
     let x = MARGIN;
@@ -35,92 +30,97 @@ export default class StreetScene extends Phaser.Scene {
       this.add.image(x - GAP / 2, SIDEWALK_Y + 4, 'lamp').setOrigin(0.5, 1);
       return placed;
     });
-    const worldW = x - GAP + MARGIN;
-    this.worldW = worldW;
 
-    this.backdrop.width = worldW;
+    drawGround(this, worldW);
 
-    // Sidewalk (gutter, cobbles and curb are all in the tile), then the road
-    this.add.tileSprite(0, SIDEWALK_Y, worldW, ROAD_Y - SIDEWALK_Y, 'sidewalk').setOrigin(0, 0);
-    this.add.rectangle(0, ROAD_Y, worldW, PANEL_Y - ROAD_Y, PALETTE.road).setOrigin(0, 0);
-
-    this.don = this.add.sprite(MARGIN / 2 + 10, FEET_Y, 'don', 0).setOrigin(0.5, 56 / 64);
+    const returning = state.donX !== null;
+    this.don = this.add.sprite(state.donX ?? MARGIN / 2 + 10, FEET_Y, 'don', 0).setOrigin(0.5, 56 / 64);
     this.targetX = null;
 
     this.cameras.main.setBounds(0, 0, worldW, GAME_HEIGHT);
     this.cameras.main.startFollow(this.don, true, 0.12, 0.12);
 
-    this.makePanel();
+    this.makeFishCounter();
+    this.makeGuardButton();
+    this.say = makePanel(this);
     this.setupInput();
-    this.currentShop = null;
-    this.say('Tap the street to walk. Time to make the rounds.');
-  }
 
-  drawSky() {
-    const g = this.add.graphics().setScrollFactor(0);
-    const top = Phaser.Display.Color.IntegerToColor(PALETTE.skyTop);
-    const bottom = Phaser.Display.Color.IntegerToColor(PALETTE.skyBottom);
-    const bands = 12;
-    const bandH = Math.ceil(SIDEWALK_Y / bands);
-    for (let i = 0; i < bands; i++) {
-      const c = Phaser.Display.Color.Interpolate.ColorWithColor(top, bottom, bands - 1, i);
-      g.fillStyle(Phaser.Display.Color.GetColor(c.r, c.g, c.b));
-      g.fillRect(0, i * bandH, GAME_WIDTH, bandH);
-    }
+    this.currentShop = this.findNearShop();
+    this.updateGuardButton();
+    this.say(returning ? 'Back to the rounds.' : 'Tap the street to walk. At a shop, tap GUARD to chase off pests.');
+
+    // The street never sleeps: now and then a shop starts to doubt you.
+    this.time.addEvent({ delay: TROUBLE_EVERY, loop: true, callback: () => this.trouble() });
   }
 
   placeShop(shop, x) {
-    // Sink the art 2px so its own pavement edge meets the sidewalk
-    const img = this.add.image(x, SIDEWALK_Y + 2, `shop-${shop.key}`).setOrigin(0, 1);
+    const img = addShop(this, shop, x);
     const { width } = img;
-
     // Protection hearts above the roof
     const hearts = [];
     for (let i = 0; i < 3; i++) {
-      const key = i < shop.hearts ? 'heart' : 'heart-empty';
-      hearts.push(this.add.image(x + width / 2 - 10 + i * 10, img.y - img.height - 6, key));
+      hearts.push(this.add.image(x + width / 2 - 10 + i * 10, img.y - img.height - 6, 'heart'));
     }
-
-    return { ...shop, width, doorX: x + width * shop.door, hearts };
+    const placed = { ...shop, width, doorX: x + width * shop.door, hearts };
+    this.refreshHearts(placed);
+    return placed;
   }
 
-  makePanel() {
-    const h = GAME_HEIGHT - PANEL_Y;
-    this.add.rectangle(0, PANEL_Y, GAME_WIDTH, h, PALETTE.night).setOrigin(0, 0).setScrollFactor(0);
-    this.add.rectangle(4, PANEL_Y + 4, GAME_WIDTH - 8, h - 8).setOrigin(0, 0).setScrollFactor(0)
-      .setStrokeStyle(1, PALETTE.cream);
-    this.panelText = this.add
-      .text(10, PANEL_Y + 10, '', {
-        fontFamily: FONT,
-        fontSize: '8px',
-        color: '#f2e3c6',
-        lineSpacing: 4,
-        wordWrap: { width: GAME_WIDTH - 20 },
-      })
+  refreshHearts(shop) {
+    shop.hearts.forEach((h, i) => h.setTexture(i < state.hearts[shop.key] ? 'heart' : 'heart-empty'));
+  }
+
+  trouble() {
+    const shaky = this.shops.filter((s) => state.hearts[s.key] > 0);
+    if (!shaky.length) return;
+    const shop = Phaser.Utils.Array.GetRandom(shaky);
+    addHearts(shop.key, -1);
+    this.refreshHearts(shop);
+    this.cameras.main.shake(150, 0.004);
+    this.say(`Word on the street: pests at the ${shop.name}. Better go guard it.`);
+  }
+
+  makeFishCounter() {
+    this.add.rectangle(4, 4, 40, 13, PALETTE.night, 0.8).setOrigin(0, 0).setScrollFactor(0);
+    this.add.image(8, 10, 'fish').setOrigin(0, 0.5).setScrollFactor(0);
+    this.add
+      .text(20, 7, String(state.fish), { fontFamily: FONT, fontSize: '8px', color: '#f2e3c6' })
       .setScrollFactor(0);
   }
 
-  // Typewriter text in the bottom panel.
-  say(text) {
-    if (this.typing) this.typing.remove();
-    this.panelText.setText('');
-    let i = 0;
-    this.typing = this.time.addEvent({
-      delay: 28,
-      repeat: text.length - 1,
-      callback: () => this.panelText.setText(text.slice(0, ++i)),
-    });
+  // A floating "GUARD" sign over the door the Don is standing at.
+  makeGuardButton() {
+    const bg = this.add.rectangle(0, 0, 52, 18, PALETTE.night).setStrokeStyle(1, PALETTE.cream);
+    const label = this.add.text(0, 0, 'GUARD', { fontFamily: FONT, fontSize: '8px', color: '#f7d27a' })
+      .setOrigin(0.5);
+    this.guard = this.add.container(0, SIDEWALK_Y - 30, [bg, label]).setSize(52, 18).setVisible(false);
+    this.guard.setInteractive({ useHandCursor: true });
+    this.guard.on('pointerdown', () => this.startPatrol());
+    this.tweens.add({ targets: this.guard, y: '-=3', duration: 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+  }
+
+  updateGuardButton() {
+    const shop = this.currentShop;
+    this.guard.setVisible(!!shop);
+    if (shop) this.guard.x = shop.doorX;
+  }
+
+  startPatrol() {
+    state.donX = this.don.x;
+    this.scene.start('Patrol', { key: this.currentShop.key });
   }
 
   setupInput() {
-    const steer = (pointer) => {
-      if (pointer.y >= PANEL_Y) return;
+    // Taps on the panel or on a button don't steer.
+    const steer = (pointer, over) => {
+      if (pointer.y >= PANEL_Y || over.length) return;
       this.targetX = pointer.worldX;
     };
     this.input.on('pointerdown', steer);
-    this.input.on('pointermove', (pointer) => pointer.isDown && steer(pointer));
+    this.input.on('pointermove', (pointer, over) => pointer.isDown && steer(pointer, over));
 
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D,SPACE');
+    this.keys.SPACE.on('down', () => this.currentShop && this.startPatrol());
   }
 
   update(_time, delta) {
@@ -150,10 +150,15 @@ export default class StreetScene extends Phaser.Scene {
     this.checkShops();
   }
 
+  findNearShop() {
+    return this.shops.find((s) => Math.abs(s.doorX - this.don.x) < NEAR_SHOP) || null;
+  }
+
   checkShops() {
-    const near = this.shops.find((s) => Math.abs(s.doorX - this.don.x) < NEAR_SHOP) || null;
+    const near = this.findNearShop();
     if (near === this.currentShop) return;
     this.currentShop = near;
+    this.updateGuardButton();
     if (near) this.say(near.line);
   }
 }

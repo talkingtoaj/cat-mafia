@@ -16,11 +16,13 @@ export default class BootScene extends Phaser.Scene {
     SHOPS.forEach(({ key }) => this.load.image(`shop-${key}`, `assets/shops/${key}.png`));
     this.load.image('sidewalk', 'assets/tiles/sidewalk.png');
     this.load.image('backdrop', 'assets/tiles/backdrop.png');
+    ['pigeon', 'mouse', 'gull'].forEach((key) => this.load.image(key, `assets/sprites/${key}.png`));
   }
 
   create() {
     this.makeHeart();
     this.makeLamp();
+    this.makeGoods();
 
     this.anims.create({
       key: 'don-walk',
@@ -66,5 +68,46 @@ export default class BootScene extends Phaser.Scene {
     g.fillStyle(0xf7d27a).fillRect(2, 3, 4, 3);
     g.generateTexture('lamp', 8, 57);
     g.destroy();
+  }
+
+  // Things worth stealing, plus the puff a pest leaves when the Don scares it off.
+  makeGoods() {
+    this.pixelTexture('sugar', [
+      '..wwwwww.',
+      '.wwwwwwws',
+      'wwwwwwwss',
+      'wllllllss',
+      'wllllllss',
+      'wllllllss',
+      'wlllllls.',
+      '.sssssss.',
+    ], { w: 0xfdf8ec, l: 0xe8dfcc, s: 0xb3a892 });
+    this.pixelTexture('cheese', [
+      '......oyyy.',
+      '...oyyyyyyy',
+      '.oyyyyyhyyy',
+      'yyyyyyyyyyy',
+      'yyhyyyyyyhd',
+      'yyyyyhyyyyd',
+      'yyyyyyyyydd',
+      'ddddddddddd',
+    ], { y: 0xf5c84c, o: 0xfde08a, h: 0xd99a2b, d: 0xb5762a });
+    this.pixelTexture('fish', [
+      '...ssss.....',
+      '.ssllllss.ks',
+      'slellllllskk',
+      'slllllllssk.',
+      '.sddddddskk.',
+      '..ssssss..ks',
+    ], { s: 0x5b6f8a, l: 0xc7d3e0, d: 0x9fb0c4, e: 0x1a1423, k: 0x8a9bb3 });
+    this.pixelTexture('poof', [
+      '...w...',
+      '.w...w.',
+      '...w...',
+      'w.www.w',
+      '...w...',
+      '.w...w.',
+      '...w...',
+    ], { w: 0xfdf8ec });
   }
 }

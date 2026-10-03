@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 import BootScene from './scenes/BootScene.js';
 import StreetScene from './scenes/StreetScene.js';
+import PatrolScene from './scenes/PatrolScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -16,7 +17,7 @@ const config = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { activePointers: 2 },
-  scene: [BootScene, StreetScene],
+  scene: [BootScene, StreetScene, PatrolScene],
 };
 
 // Wait for the pixel font so text is crisp on the first frame. Give up after 2s.
@@ -28,4 +29,7 @@ const fontReady = document.fonts
     ])
   : Promise.resolve();
 
-fontReady.finally(() => new Phaser.Game(config));
+fontReady.finally(() => {
+  const game = new Phaser.Game(config);
+  if (import.meta.env.DEV) window.game = game; // handy for poking at it from the console
+});

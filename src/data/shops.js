@@ -1,5 +1,6 @@
 // Shops on the first street. `door` is where the Don stands to check in,
-// as a fraction of the shop's width.
+// as a fraction of the shop's width. `hearts` is how much the shop trusts him at the start.
+// `goods` is what pests try to steal during Pest Patrol, and `pests` is who shows up.
 export const SHOPS = [
   {
     key: 'cay',
@@ -7,6 +8,11 @@ export const SHOPS = [
     door: 0.3,
     hearts: 3,
     line: 'The tea house. Glasses clink, nobody spills. Not on my watch.',
+    goods: 'sugar',
+    pests: ['pigeon', 'pigeon', 'mouse'],
+    intro: 'Pigeons want the sugar cubes. Tap them before they grab one.',
+    win: 'Mehmet pours you a saucer of milk. Business is good.',
+    lose: 'Sticky beaks everywhere. Mehmet sighs into his tea.',
   },
   {
     key: 'bakkal',
@@ -14,6 +20,11 @@ export const SHOPS = [
     door: 0.62,
     hearts: 2,
     line: 'The corner store. Old Hasan hides the good cheese. He knows I know.',
+    goods: 'cheese',
+    pests: ['mouse', 'mouse', 'pigeon'],
+    intro: 'Mice are after the cheese. Tap them before they grab it.',
+    win: 'Hasan slips you the good cheese. Respect.',
+    lose: 'Hasan counts the crumbs. He does not look happy.',
   },
   {
     key: 'balik',
@@ -21,5 +32,10 @@ export const SHOPS = [
     door: 0.5,
     hearts: 1,
     line: 'The fish stall. Smells like trouble. Smells like lunch.',
+    goods: 'fish',
+    pests: ['gull', 'gull', 'mouse'],
+    intro: 'Gulls dive for the fish. Tap them out of the sky.',
+    win: 'Ayşe tosses you a sardine. The gulls will remember you.',
+    lose: 'The gulls got fat today. Ayşe shakes her broom at the sky.',
   },
 ];
