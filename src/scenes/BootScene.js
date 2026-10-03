@@ -23,6 +23,7 @@ export default class BootScene extends Phaser.Scene {
     this.makeHeart();
     this.makeLamp();
     this.makeGoods();
+    this.makeSpeaker();
 
     this.anims.create({
       key: 'don-walk',
@@ -109,5 +110,28 @@ export default class BootScene extends Phaser.Scene {
       '.w...w.',
       '...w...',
     ], { w: 0xfdf8ec });
+  }
+
+  // Mute button icons: a speaker with sound waves, or with an X.
+  makeSpeaker() {
+    const colors = { '#': PALETTE.cream };
+    this.pixelTexture('sound-on', [
+      '...#.....',
+      '..##..#..',
+      '####...#.',
+      '####.#.#.',
+      '####...#.',
+      '..##..#..',
+      '...#.....',
+    ], colors);
+    this.pixelTexture('sound-off', [
+      '...#.....',
+      '..##.....',
+      '####.#.#.',
+      '####..#..',
+      '####.#.#.',
+      '..##.....',
+      '...#.....',
+    ], colors);
   }
 }

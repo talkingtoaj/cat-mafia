@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, SIDEWALK_Y, FEET_Y, PANEL_Y, FONT, PALETTE } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, SIDEWALK_Y, FEET_Y, PANEL_Y, FONT, PALETTE } from '../config.js';
 import { SHOPS } from '../data/shops.js';
 import { state, addHearts } from '../state.js';
+import { isMuted, toggleMute } from '../music.js';
 import { drawBackground, drawGround, addShop, makePanel } from './scenery.js';
 
 const MARGIN = 48;
@@ -41,6 +42,7 @@ export default class StreetScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.don, true, 0.12, 0.12);
 
     this.makeFishCounter();
+    this.makeMuteButton();
     this.makeGuardButton();
     this.say = makePanel(this);
     this.setupInput();
@@ -81,11 +83,18 @@ export default class StreetScene extends Phaser.Scene {
   }
 
   makeFishCounter() {
-    this.add.rectangle(4, 4, 40, 13, PALETTE.night, 0.8).setOrigin(0, 0).setScrollFactor(0);
+    this.add.rectangle(4, 4, 44, 13, PALETTE.night, 0.8).setOrigin(0, 0).setScrollFactor(0);
     this.add.image(8, 10, 'fish').setOrigin(0, 0.5).setScrollFactor(0);
     this.add
-      .text(20, 7, String(state.fish), { fontFamily: FONT, fontSize: '8px', color: '#f2e3c6' })
+      .text(23, 7, String(state.fish), { fontFamily: FONT, fontSize: '8px', color: '#f2e3c6' })
       .setScrollFactor(0);
+  }
+
+  makeMuteButton() {
+    const bg = this.add.rectangle(GAME_WIDTH - 4, 4, 17, 13, PALETTE.night, 0.8).setOrigin(1, 0).setScrollFactor(0);
+    const icon = this.add.image(GAME_WIDTH - 12, 10, isMuted() ? 'sound-off' : 'sound-on').setScrollFactor(0);
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', () => icon.setTexture(toggleMute() ? 'sound-off' : 'sound-on'));
   }
 
   // A floating "GUARD" sign over the door the Don is standing at.

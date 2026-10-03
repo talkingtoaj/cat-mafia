@@ -3,6 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 import BootScene from './scenes/BootScene.js';
 import StreetScene from './scenes/StreetScene.js';
 import PatrolScene from './scenes/PatrolScene.js';
+import './music.js';
 
 const config = {
   type: Phaser.AUTO,
