@@ -1,0 +1,18 @@
+{
+  "name": "cat-mafia",
+  "version": "0.1.0",
+  "description": "Cat Mafia: The Rounds. A cozy 8-bit game about Istanbul's shop cats.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "type": "module",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.2"
+  },
+  "private": true
+}
